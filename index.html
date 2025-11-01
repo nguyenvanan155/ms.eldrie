@@ -1,34 +1,17 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <title>Random Music 🎧</title>
-</head>
-<body style="background:#000; color:#fff; text-align:center; font-family:sans-serif;">
-  <p>🎶 Đang phát nhạc ngẫu nhiên...</p>
+<!DOCTYPE html><html lang="vi"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test ms.eldrie.site</title>
+</head><body>
+<h1>Test MSPlayer</h1>
 
-  <audio id="player" autoplay></audio>
+<script src="/ms-player@1.0.0.js"
+        data-auto-init="true"
+        data-source="/api/playlist.json"
+        data-random="true"
+        data-loop="true"
+        data-volume="0.9"
+        data-autoplay="false"></script>
 
-  <script>
-    // Danh sách các file nhạc trong thư mục /audio/
-    const songs = [
-      "audio/1.mp3",
-      "audio/2.mp3",
-      "audio/3.mp3",
-      "audio/4.mp3",
-      "audio/5.mp3"
-    ];
-
-    // Chọn ngẫu nhiên 1 bài
-    const randomSong = songs[Math.floor(Math.random() * songs.length)];
-
-    // Gán vào player và phát
-    const player = document.getElementById("player");
-    player.src = randomSong;
-    player.play().catch(() => {
-      // Trường hợp trình duyệt chặn autoplay
-      document.body.innerHTML += "<p>Hãy click vào web chính để bật nhạc 🎵</p>";
-    });
-  </script>
-</body>
-</html>
+<button data-ms="toggle">Bật/Tắt</button>
+<button data-ms="next">Next</button>
+</body></html>
