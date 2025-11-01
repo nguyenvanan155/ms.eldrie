@@ -1,17 +1,148 @@
-<!DOCTYPE html><html lang="vi"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Test ms.eldrie.site</title>
-</head><body>
-<h1>Test MSPlayer</h1>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Eldrie Music Player</title>
 
-<script src="/ms-player@1.0.0.js"
-        data-auto-init="true"
-        data-source="/api/playlist.json"
-        data-random="true"
-        data-loop="true"
-        data-volume="0.9"
-        data-autoplay="false"></script>
+  <!-- ================== CSS GIAO DIỆN NÚT ================== -->
+  <style>
+  :root{
+    --ms-fab-size: 60px;
+    --ms-bg: rgba(173, 26, 26, 0.85);
+    --ms-fg: #000000;
+    --ms-accent: #8b5cf6; /* tím Eldrie */
+    --ms-shadow: 0 8px 20px rgba(0,0,0,.25);
+  }
 
-<button data-ms="toggle">Bật/Tắt</button>
-<button data-ms="next">Next</button>
-</body></html>
+body{
+  margin:0; font-family:sans-serif;
+  min-height:100vh; display:flex;
+  justify-content:center; align-items:center;
+  background: url('media/bg.png') no-repeat center center fixed;
+  background-size: cover;
+  color:#fff; text-align:center;
+}
+
+
+  h1{ font-weight:500; letter-spacing:.5px; }
+
+  .ms-fab{
+    position: fixed;
+    right: 20px; bottom: 20px;
+    width: var(--ms-fab-size); height: var(--ms-fab-size);
+    border: none; border-radius: 50%;
+    background: var(--ms-bg); color: var(--ms-fg);
+    display: grid; place-items: center;
+    cursor: pointer; outline: none;
+    box-shadow: var(--ms-shadow);
+    backdrop-filter: blur(8px);
+    transition: transform .25s ease, box-shadow .25s ease;
+  }
+  .ms-fab:hover{ transform: translateY(-2px); box-shadow: 0 12px 24px rgba(0,0,0,.3); }
+  .ms-icon{ position:absolute; display:grid; place-items:center; transition: opacity .18s ease, transform .18s ease; }
+  .ms-icon svg{ width:28px; height:28px; fill:currentColor; }
+  .ms-icon--pause{ opacity:0; transform:scale(.7); }
+  .ms-fab.is-playing .ms-icon--play{ opacity:0; transform:scale(.7); }
+  .ms-fab.is-playing .ms-icon--pause{ opacity:1; transform:scale(1); }
+
+  .ms-eq{
+    position:absolute; bottom:7px; left:50%; transform:translateX(-50%);
+    width:22px; height:12px; display:flex; gap:3px;
+    opacity:0; transition:opacity .2s ease;
+  }
+  .ms-eq i{
+    flex:1; background:currentColor; border-radius:2px;
+    transform-origin:bottom center; height:20%;
+    animation:ms-bounce 800ms infinite ease-in-out;
+  }
+  .ms-eq i:nth-child(2){ animation-delay:120ms; }
+  .ms-eq i:nth-child(3){ animation-delay:240ms; }
+  @keyframes ms-bounce{
+    0%,100%{height:25%}
+    40%{height:85%}
+    70%{height:45%}
+  }
+  .ms-fab.is-playing .ms-eq{ opacity:.9; }
+
+  .ms-fab::after{
+    content:""; position:absolute; inset:-3px; border-radius:inherit;
+    border:2px solid transparent;
+    transition:border-color .3s ease, box-shadow .3s ease;
+  }
+  .ms-fab.is-playing::after{
+    border-color:var(--ms-accent);
+    box-shadow:0 0 0 6px color-mix(in oklab, var(--ms-accent) 24%, transparent);
+  }
+
+  .ms-ripple{
+    position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    background: radial-gradient(circle at center,
+      color-mix(in oklab, var(--ms-accent) 35%, transparent) 0,
+      transparent 60%);
+    transform:scale(0); opacity:0;
+  }
+  .ms-fab:active .ms-ripple{
+    transform:scale(1); opacity:.35;
+    transition:transform .2s ease,opacity .3s ease;
+  }
+  </style>
+</head>
+
+<body>
+  <main>
+    <h1></h1>
+  </main>
+
+  <!-- ================== SCRIPT PLAYER ================== -->
+  <script src="/ms-player@1.0.0.js"
+          data-auto-init="true"
+          data-source="https://ms.eldrie.site/api/playlist.json"
+          data-random="true"
+          data-loop="true"
+          data-toggle-new="true"
+          data-volume="0.9"></script>
+
+  <!-- ================== NÚT BẬT / TẮT ================== -->
+  <button id="msFab"
+          class="ms-fab"
+          aria-label="Bật nhạc"
+          aria-pressed="false"
+          title="Bật/Tắt nhạc">
+    <span class="ms-icon ms-icon--play">
+      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+    </span>
+    <span class="ms-icon ms-icon--pause">
+      <svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>
+    </span>
+    <span class="ms-eq"><i></i><i></i><i></i></span>
+    <span class="ms-ripple"></span>
+  </button>
+
+  <!-- ================== KẾT NỐI NÚT VỚI PLAYER ================== -->
+  <script>
+  (function(){
+    const btn = document.getElementById('msFab');
+
+    // Khi bấm nút -> toggle nhạc
+    btn.addEventListener('click', () => {
+      if (window.MSPlayer) MSPlayer.toggle();
+    });
+
+    // Đồng bộ icon phát / tạm dừng
+    let last = false;
+    function sync(){
+      const s = window.MSPlayer?.status;
+      const playing = s && !s.paused && s.current;
+      if (playing !== last){
+        btn.classList.toggle('is-playing', !!playing);
+        btn.setAttribute('aria-pressed', !!playing);
+      }
+      last = playing;
+      requestAnimationFrame(sync);
+    }
+    requestAnimationFrame(sync);
+  })();
+  </script>
+</body>
+</html>
