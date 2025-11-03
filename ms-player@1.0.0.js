@@ -1,4 +1,4 @@
-/* ms.eldrie.site - MSPlayer v1.0.2 (auto-init enhanced) */
+/* ms.eldrie.site - MSPlayer v1.0.2 (auto-init + playMusic default) */
 (function () {
   const DEFAULT_SRC = "https://ms.eldrie.site/api/playlist.json";
   const state = {
@@ -102,12 +102,10 @@
       state.toggleNew  = (String(opts.toggleNew ?? s.toggleNew ?? "true") !== "false");
       audio.volume     = state.volume;
 
-      // hỗ trợ data-toggle-button
-      const toggleSel = opts.toggleButton ?? s.toggleButton ?? null;
-      if (toggleSel) {
-        const el = document.querySelector(toggleSel);
-        if (el && !el.hasAttribute("data-ms")) el.setAttribute("data-ms", "toggle");
-      }
+      // hỗ trợ data-toggle-button, mặc định "#playMusic"
+      const toggleSel = opts.toggleButton ?? s.toggleButton ?? "#playMusic";
+      const el = document.querySelector(toggleSel);
+      if (el && !el.hasAttribute("data-ms")) el.setAttribute("data-ms", "toggle");
 
       await loadTracks(src);
 
@@ -118,7 +116,17 @@
       // bind sự kiện
       document.querySelectorAll("[data-ms]").forEach(el => {
         const act = el.getAttribute("data-ms");
-        if (act === "toggle") el.addEventListener("click", toggle);
+        if (act === "toggle") el.addEventListener("click", () => {
+          toggle();
+          // đổi icon play/pause nếu có
+          const playIcon = document.getElementById("playIcon");
+          const pauseIcon = document.getElementById("pauseIcon");
+          if (playIcon && pauseIcon) {
+            const playing = !audio.paused;
+            playIcon.style.display  = playing ? "none" : "inline-block";
+            pauseIcon.style.display = playing ? "inline-block" : "none";
+          }
+        });
         if (act === "next")   el.addEventListener("click", playNext);
       });
     },
@@ -137,9 +145,10 @@
   try {
     const el = document.currentScript;
     const auto = el?.dataset?.autoInit === "true";
-    const toggleBtn = el?.dataset?.toggleButton;
-    const hasButton = document.querySelector("[data-ms]");
-    if (auto || hasButton || toggleBtn) {
+    const toggleBtn = el?.dataset?.toggleButton || "#playMusic"; // nút mặc định
+    const hasButton = document.querySelector("[data-ms]") || document.querySelector(toggleBtn);
+
+    if (auto || hasButton) {
       const opts = {
         source: el?.dataset?.source,
         random: el?.dataset?.random,
