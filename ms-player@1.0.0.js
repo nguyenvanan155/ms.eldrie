@@ -1,4 +1,4 @@
-/* ms.eldrie.site - MSPlayer v1.0.1 */
+/* ms.eldrie.site - MSPlayer v1.0.2 (auto-init enhanced) */
 (function () {
   const DEFAULT_SRC = "https://ms.eldrie.site/api/playlist.json";
   const state = {
@@ -7,7 +7,7 @@
     random: true,
     loopList: true,
     volume: 1,
-    toggleNew: true // bật lại sẽ random bài khác (có thể tắt bằng data-toggle-new="false")
+    toggleNew: true // bật lại sẽ random bài khác
   };
 
   // ---- AUDIO (singleton) ----
@@ -49,7 +49,6 @@
     audio.play().catch(() => { tryPlayAfterUserGesture(); });
   }
 
-  // NEW: bật lại sẽ random bài KHÁC bài trước
   function playRandomDifferent() {
     if (!state.tracks.length) return;
     const candidates = state.current
@@ -68,8 +67,7 @@
   });
 
   audio.addEventListener("error", () => {
-    // Thường do URL 404 hoặc CORS; giữ yên lặng để không làm phiền người dùng.
-    // console.error("[MSPlayer] Audio error:", audio.src);
+    // thường do 404 hoặc CORS; im lặng
   });
 
   async function loadTracks(src) {
@@ -83,10 +81,8 @@
   function toggle() {
     if (audio.paused) {
       if (state.toggleNew) {
-        // Bật lại -> random bài khác
         playRandomDifferent();
       } else {
-        // Hành vi cũ: resume nếu có current
         if (!state.current) playNext();
         else audio.play().catch(() => { tryPlayAfterUserGesture(); });
       }
@@ -97,7 +93,6 @@
 
   // ---- PUBLIC API ----
   window.MSPlayer = {
-    /** Khởi tạo từ thẻ <script data-...> (tự động nếu data-auto-init="true") */
     async init(opts = {}) {
       const s = (document.currentScript && document.currentScript.dataset) || {};
       const src        = opts.source ?? s.source ?? DEFAULT_SRC;
@@ -107,13 +102,20 @@
       state.toggleNew  = (String(opts.toggleNew ?? s.toggleNew ?? "true") !== "false");
       audio.volume     = state.volume;
 
+      // hỗ trợ data-toggle-button
+      const toggleSel = opts.toggleButton ?? s.toggleButton ?? null;
+      if (toggleSel) {
+        const el = document.querySelector(toggleSel);
+        if (el && !el.hasAttribute("data-ms")) el.setAttribute("data-ms", "toggle");
+      }
+
       await loadTracks(src);
 
       if (String(opts.autoplay ?? s.autoplay ?? "false") === "true") {
         playNext();
       }
 
-      // Tự bind nút theo data-ms
+      // bind sự kiện
       document.querySelectorAll("[data-ms]").forEach(el => {
         const act = el.getAttribute("data-ms");
         if (act === "toggle") el.addEventListener("click", toggle);
@@ -125,19 +127,30 @@
     pause()  { if (!audio.paused) audio.pause(); },
     toggle,
     next:    playNext,
-
     async setSource(src) { await loadTracks(src); state.current = null; },
     setVolume(v) { const vv = Math.min(1, Math.max(0, Number(v) || 0)); audio.volume = vv; state.volume = vv; },
     setRandom(r) { state.random = !!r; },
-
     get status() { return { ...state, paused: audio.paused }; }
   };
 
-  // Auto init nếu có data-auto-init
+  // ---- AUTO INIT ----
   try {
     const el = document.currentScript;
-    if (el && el.dataset && el.dataset.autoInit === "true") {
-      window.MSPlayer.init();
+    const auto = el?.dataset?.autoInit === "true";
+    const toggleBtn = el?.dataset?.toggleButton;
+    const hasButton = document.querySelector("[data-ms]");
+    if (auto || hasButton || toggleBtn) {
+      const opts = {
+        source: el?.dataset?.source,
+        random: el?.dataset?.random,
+        loop: el?.dataset?.loop,
+        volume: el?.dataset?.volume,
+        autoplay: el?.dataset?.autoplay,
+        toggleButton: toggleBtn
+      };
+      window.MSPlayer.init(opts);
     }
-  } catch (_) {}
+  } catch (e) {
+    console.warn("[MSPlayer] auto-init failed:", e);
+  }
 })();
