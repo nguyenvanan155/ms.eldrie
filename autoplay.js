@@ -1,6 +1,6 @@
 (function () {
   const script = document.currentScript;
-  const hostBase = script.src.split('/autoplay-music.js')[0];
+  const hostBase = script.src.split('/autoplay.js')[0];
 
   // ⚙️ Cấu hình mặc định
   const config = {
@@ -16,10 +16,10 @@
   fetch(config.playlistUrl)
     .then(r => r.json())
     .then(list => boot(list))
-    .catch(() => console.warn('[autoplay-music] Không tải được playlist.json'));
+    .catch(() => console.warn('[autoplay] Không tải được playlist.json'));
 
   function boot(playlist) {
-    if (!playlist || !playlist.length) return console.warn('[autoplay-music] Playlist rỗng');
+    if (!playlist || !playlist.length) return console.warn('[autoplay] Playlist rỗng');
     const audio = document.createElement('audio');
     audio.preload = config.preload;
     audio.crossOrigin = 'anonymous';
@@ -30,7 +30,7 @@
     // 🎶 Chọn ngẫu nhiên bài đầu
     let index = Math.floor(Math.random() * playlist.length);
     audio.src = playlist[index].src;
-    console.log(`[autoplay-music] ▶️ Đang phát: ${playlist[index].title || playlist[index].src}`);
+    console.log(`[autoplay] ▶️ Đang phát: ${playlist[index].title || playlist[index].src}`);
 
     // 🎶 Khi hết bài → chọn bài khác ngẫu nhiên
     audio.addEventListener('ended', () => {
@@ -42,7 +42,7 @@
         index = nextIndex;
         audio.src = playlist[index].src;
         audio.play().catch(()=>{});
-        console.log(`[autoplay-music] 🔀 Tiếp theo: ${playlist[index].title || playlist[index].src}`);
+        console.log(`[autoplay] 🔀 Tiếp theo: ${playlist[index].title || playlist[index].src}`);
       } else if (config.loop) {
         audio.currentTime = 0;
         audio.play();
@@ -98,3 +98,4 @@
     window.addEventListener('keydown', unlock);
   }
 })();
+
